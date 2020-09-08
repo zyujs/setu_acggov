@@ -9,7 +9,7 @@
 ## 安装方法:
 
 1. 在HoshinoBot的插件目录modules下clone本项目 `git clone https://github.com/zyujs/setu_acggov.git`
-1. 将本插件目录下的配置文件模板 `config.template.py` 复制为 `config.py` ,修改该配置文件,加入自己的APIKEY.
+1. 将本插件目录下的配置文件模板 `config.template.py` 复制为 `config.py` ,修改配置文件的 `APIKEY` 和 `IMAGE_PATH` 及其他需要自定义的项目.
 1. 在 `config/__bot__.py`的模块列表里加入 `setu_acggov`
 1. 重启HoshinoBot
 

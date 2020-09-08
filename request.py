@@ -122,31 +122,29 @@ async def get_ranking_setu(number: int) -> (int, str):
     illust = data['response'][0]['works'][number]['work']['id']
     title = data['response'][0]['works'][number]['work']['title']
     author = data['response'][0]['works'][number]['work']['user']['name']
-    data = {}
-    try:
-        async with aiohttp.ClientSession(headers=headers) as session:
-            async with session.get(f'https://api.acg-gov.com/illusts/detail?illustId={illust}&reduction=true') as resp:
-                data = await resp.json(content_type='application/json')
-    except Exception as e:
-        traceback.print_exc()
-        return 1, 'detail获取失败'
-    if 'data' not in data:
-        return 1, 'detail数据无效'
-    data = data['data']
-    page_count = data['illust']['page_count']
     url = ''
-    if page_count == 1:
-        if USE_THUMB:
-            url = data['illust']['image_urls']['large'].replace("https://i.pximg.net", "https://i.pixiv.cat")
-        else:
-            url = data['illust']['meta_single_page']['original_image_url'].replace("https://i.pximg.net", "https://i.pixiv.cat")
+    if USE_THUMB:
+        url = data['response'][0]['works'][number]['work']['image_urls']['large']
     else:
-        meta_pages = data['illust']['meta_pages']
-        num = random.randint(0, len(meta_pages)-1)
-        if USE_THUMB:
-            url = meta_pages[num]['image_urls']['large'].replace("https://i.pximg.net", "https://i.pixiv.cat")
+        data = {}
+        try:
+            async with aiohttp.ClientSession(headers=headers) as session:
+                async with session.get(f'https://api.acg-gov.com/illusts/detail?illustId={illust}&reduction=true') as resp:
+                    data = await resp.json(content_type='application/json')
+        except Exception as e:
+            traceback.print_exc()
+            return 1, 'detail获取失败'
+        if 'data' not in data:
+            return 1, 'detail数据无效'
+        data = data['data']
+        page_count = data['illust']['page_count']
+        if page_count == 1:
+            url = data['illust']['meta_single_page']['original_image_url']
         else:
-            url = meta_pages[num]['image_urls']['original'].replace("https://i.pximg.net", "https://i.pixiv.cat")
+            meta_pages = data['illust']['meta_pages']
+            num = random.randint(0, len(meta_pages)-1)
+            url = meta_pages[num]['image_urls']['original']
+    url = url.replace("https://i.pximg.net", "https://i.pixiv.cat")
 
     suffix = url.split('.')[-1]
     file_name = f'{illust}.{suffix}'
