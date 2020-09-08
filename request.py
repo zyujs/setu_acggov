@@ -77,6 +77,7 @@ async def get_setu() -> (int, str):
     data = data['data']
     illust = data['illust']
     title = data['title']
+    author = data['user']['name']
 
     url = ''
     if USE_THUMB:
@@ -87,7 +88,7 @@ async def get_setu() -> (int, str):
     suffix = url.split('.')[-1]
     file_name = f'{illust}.{suffix}'
     if await download_image(url, file_name) == 0:
-        return 0, f'id:{illust}\ntitle:{title}\n[CQ:image,file=acggov/{file_name}]'
+        return 0, f'id:{illust}\ntitle:{title}\nauthor:{author}\n[CQ:image,file=acggov/{file_name}]'
     else:
         return 1, '图片下载失败'
 
@@ -120,6 +121,7 @@ async def get_ranking_setu(number: int) -> (int, str):
 
     illust = data['response'][0]['works'][number]['work']['id']
     title = data['response'][0]['works'][number]['work']['title']
+    author = data['response'][0]['works'][number]['work']['user']['name']
     data = {}
     try:
         async with aiohttp.ClientSession(headers=headers) as session:
@@ -149,6 +151,6 @@ async def get_ranking_setu(number: int) -> (int, str):
     suffix = url.split('.')[-1]
     file_name = f'{illust}.{suffix}'
     if await download_image(url, file_name) == 0:
-        return 0, f'id:{illust}\ntitle:{title}\n[CQ:image,file=acggov/{file_name}]'
+        return 0, f'id:{illust}\ntitle:{title}\nauthor:{author}\n[CQ:image,file=acggov/{file_name}]'
     else:
         return 1, '图片下载失败'

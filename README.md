@@ -17,6 +17,12 @@
 
 本插件的模块名为 `setu_acggov`, 默认关闭且必须由超级用户开启.
 
+## 指令说明
+
+作者并不知道这个插件怎么用,请自行查询帮助或阅读代码.
+
+![Image text](https://i0.hdslb.com/bfs/album/f724e10667cb1eb3d4797c5a71f9c60b463498b7.jpg@518w_1e_1c.jpg)
+
 ## 开源
 
 本插件以GPL-v3协议开源
