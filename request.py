@@ -52,6 +52,8 @@ async def download_image(url: str, file_name: str):
                 if USE_THUMB:
                     byte_stream = io.BytesIO(data)
                     roiImg = Image.open(byte_stream)
+                    if roiImg.mode != 'RGB':
+                        roiImg = roiImg.convert('RGB')
                     imgByteArr = io.BytesIO()
                     roiImg.save(imgByteArr, format='JPEG')
                     data = imgByteArr.getvalue()
