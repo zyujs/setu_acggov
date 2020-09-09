@@ -94,7 +94,7 @@ async def get_setu() -> (int, str):
 
 #获取排行榜
 async def get_ranking(page: int = 0) -> (int, str):
-    date = (datetime.datetime.now() + datetime.timedelta(days=-3)).strftime("%Y-%m-%d")
+    date = (datetime.datetime.now() + datetime.timedelta(days=-2)).strftime("%Y-%m-%d")
     data = await query_ranking(date, page)
     if not 'response' in data:
         return 1, '数据获取失败'
@@ -114,7 +114,7 @@ async def get_ranking_setu(number: int) -> (int, str):
     page = number // PER_PAGE
     number = number % PER_PAGE
 
-    date = (datetime.datetime.now() + datetime.timedelta(days=-3)).strftime("%Y-%m-%d")
+    date = (datetime.datetime.now() + datetime.timedelta(days=-2)).strftime("%Y-%m-%d")
     data = await query_ranking(date, page)
     if not 'response' in data:
         return 1, 'API访问异常'
