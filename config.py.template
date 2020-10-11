@@ -1,9 +1,11 @@
 APIKEY = '' 
-IMAGE_PATH = "/home/bot/go-cqhttp/data/images" #宿主图片目录
-PER_PAGE = 25   #排行榜每页数量
+PER_PAGE = 25   #排行榜每页数量,请注意过大的数字会导致排行榜数据返回空值
 MODE = 'daily'  #可用模式见 https://api.hcyacg.com/#/public/ranking
-PROXY = ''    #代理 仅限http代理 不使用请留空
 USE_THUMB = True  #使用略缩图模式
+
+#以下代理设置只能使用http代理,不使用请留空
+PROXY = ''    #访问acggov使用的代理,由于acggov仅限境内ip访问,在境外的主机需要使用境内代理访问api
+PIXIV_PROXY = ''  #从pixiv下载图片使用的代理,如果设置了代理,插件将直接从pixiv服务器下载图片
 
 DAILY_MAX_NUM = 10
 FREQ_LIMIT = 60

@@ -1,4 +1,3 @@
-import os
 import datetime
 import random
 import string
@@ -7,16 +6,16 @@ import asyncio
 import traceback
 import sys
 import io
+import base64
 from PIL import Image
 from .config import *
 
-headers = {
+ranking_list = {}
+
+acggov_headers = {
     'token': APIKEY,
     'referer': 'https://www.acg-gov.com/'
     }
-
-ranking_list = {}
-
 
 if sys.platform == 'win32':
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
@@ -30,23 +29,19 @@ async def query_ranking(date: str, page: int) -> dict:
     url = f'https://api.acg-gov.com/public/ranking?ranking_type=illust&mode={MODE}&date={date}&per_page={PER_PAGE}&page={page+1}'
     data = {}
     try:
-        async with aiohttp.ClientSession(headers=headers) as session:
-            async with session.get(url) as resp:
+        async with aiohttp.ClientSession(headers=acggov_headers) as session:
+            async with session.get(url, proxy=PROXY) as resp:
                 data = await resp.json(content_type='application/json')
                 ranking_list[date][page] = data
-    except Exception as e:
+    except:
         traceback.print_exc()
-        return {}
     return data
 
-async def download_image(url: str, file_name: str):
-    folder = os.path.join(IMAGE_PATH, 'acggov')
-    if not os.path.exists(folder):
-        os.mkdir(folder)
+async def download_acggov_image(url: str):
+    print('download image', url)
     salt = ''.join(random.sample(string.ascii_letters + string.digits, 6))
-    path = os.path.join(IMAGE_PATH, 'acggov', file_name)
     try:
-        async with aiohttp.ClientSession(headers=headers) as session:
+        async with aiohttp.ClientSession(headers=acggov_headers) as session:
             async with session.get(url, proxy=PROXY) as resp:
                 data = await resp.read()
                 if USE_THUMB:
@@ -57,19 +52,40 @@ async def download_image(url: str, file_name: str):
                     imgByteArr = io.BytesIO()
                     roiImg.save(imgByteArr, format='JPEG')
                     data = imgByteArr.getvalue()
-                
-                open(path, 'wb').write(data + bytes(salt, encoding="utf8"))
-    except Exception as e:
+                return data + bytes(salt, encoding="utf8")
+    except :
         traceback.print_exc()
-        return 1
-    return 0
+    return None
+
+async def download_pixiv_image(url: str, id):
+    print('download pixiv image', url)
+    headers = {
+        'referer': f'https://www.pixiv.net/member_illust.php?mode=medium&illust_id={id}'
+        }
+    salt = ''.join(random.sample(string.ascii_letters + string.digits, 6))
+    try:
+        async with aiohttp.ClientSession(headers=headers) as session:
+            async with session.get(url, proxy=PIXIV_PROXY) as resp:
+                data = await resp.read()
+                if USE_THUMB:
+                    byte_stream = io.BytesIO(data)
+                    roiImg = Image.open(byte_stream)
+                    if roiImg.mode != 'RGB':
+                        roiImg = roiImg.convert('RGB')
+                    imgByteArr = io.BytesIO()
+                    roiImg.save(imgByteArr, format='JPEG')
+                    data = imgByteArr.getvalue()
+                return data + bytes(salt, encoding="utf8")
+    except :
+        traceback.print_exc()
+    return None
 
 #获取随机色图
 async def get_setu() -> (int, str):
     data = {}
     try:
-        async with aiohttp.ClientSession(headers=headers) as session:
-            async with session.get('https://api.acg-gov.com/public/setu') as resp:
+        async with aiohttp.ClientSession(headers=acggov_headers) as session:
+            async with session.get('https://api.acg-gov.com/public/setu', proxy=PROXY) as resp:
                 data = await resp.json(content_type='application/json')
     except Exception as e:
         traceback.print_exc()
@@ -87,12 +103,11 @@ async def get_setu() -> (int, str):
     else:
         num = random.randint(0, int(data['pageCount'])-1)
         url = data['originals'][num]['url']
-    suffix = url.split('.')[-1]
-    file_name = f'{illust}.{suffix}'
-    if await download_image(url, file_name) == 0:
-        return 0, f'id:{illust}\ntitle:{title}\nauthor:{author}\n[CQ:image,file=acggov/{file_name}]'
-    else:
+    image_data = await download_acggov_image(url)
+    if not image_data:
         return 1, '图片下载失败'
+    base64_str = f"base64://{base64.b64encode(image_data).decode()}"
+    return 0, f'id:{illust}\ntitle:{title}\nauthor:{author}\n[CQ:image,file={base64_str}]'
 
 #获取排行榜
 async def get_ranking(page: int = 0) -> (int, str):
@@ -130,10 +145,10 @@ async def get_ranking_setu(number: int) -> (int, str):
     else:
         data = {}
         try:
-            async with aiohttp.ClientSession(headers=headers) as session:
-                async with session.get(f'https://api.acg-gov.com/illusts/detail?illustId={illust}&reduction=true') as resp:
+            async with aiohttp.ClientSession(headers=acggov_headers) as session:
+                async with session.get(f'https://api.acg-gov.com/illusts/detail?illustId={illust}&reduction=true', proxy=PROXY) as resp:
                     data = await resp.json(content_type='application/json')
-        except Exception as e:
+        except Exception as _:
             traceback.print_exc()
             return 1, 'detail获取失败'
         if 'data' not in data:
@@ -146,11 +161,13 @@ async def get_ranking_setu(number: int) -> (int, str):
             meta_pages = data['illust']['meta_pages']
             num = random.randint(0, len(meta_pages)-1)
             url = meta_pages[num]['image_urls']['original']
-    url = url.replace("https://i.pximg.net", "https://i.pixiv.cat")
-
-    suffix = url.split('.')[-1]
-    file_name = f'{illust}.{suffix}'
-    if await download_image(url, file_name) == 0:
-        return 0, f'id:{illust}\ntitle:{title}\nauthor:{author}\n[CQ:image,file=acggov/{file_name}]'
+    image_data = None
+    if PIXIV_PROXY:
+        image_data = await download_pixiv_image(url, illust)
     else:
+        url = url.replace("https://i.pximg.net", "https://i.pixiv.cat")
+        image_data = await download_acggov_image(url)
+    if not image_data:
         return 1, '图片下载失败'
+    base64_str = f"base64://{base64.b64encode(image_data).decode()}"
+    return 0, f'id:{illust}\ntitle:{title}\nauthor:{author}\n[CQ:image,file={base64_str}]'
